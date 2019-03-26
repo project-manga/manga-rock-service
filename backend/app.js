@@ -1,5 +1,7 @@
+const Git = require("nodegit");
 const express = require("express");
 const bodyParser = require("body-parser");
+var path = require("path");
 
 const app = express();
 
@@ -17,6 +19,45 @@ app.use((req, res, next) => {
     "GET, POST, PATCH, DELETE, OPTIONS"
   );
   next();
+});
+
+app.get('/api/commit', (req, res, next) => {
+
+  //git clone https://github.com/project-manga/manga-core.git
+
+  Git.Clone('https://github.com/project-manga/manga-core.git', './git-repository')
+    .then(function () {
+
+
+      Git.Repository.open("./git-repository")
+        .then(function (repo) {
+          return repo.getHeadCommit()
+            .then(function (commit) {
+              return repo.createBranch("test", commit, false);
+            })
+            .then(function(branch) {
+              return repo.checkoutBranch(branch, {});
+            })
+            .then(function(reference) {
+              var sign = Git.Signature.now("", "andrea.bertin@outlook.com");
+              repo.push(
+                ["refs/heads/master:refs/heads/master"],
+
+              )
+
+            });
+        })
+        .done(function () {
+          console.log('Completed');
+          res.status(200).json('Completed!!!');
+        })
+
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.status(500).json('Failed!!!');
+    });
+
 });
 
 app.post("/api/posts", (req, res, next) => {
