@@ -31,20 +31,45 @@ app.get('/api/commit', (req, res, next) => {
 
       Git.Repository.open("./git-repository")
         .then(function (repo) {
+          let remote = null;
           return repo.getHeadCommit()
             .then(function (commit) {
               return repo.createBranch("test", commit, false);
             })
-            .then(function(branch) {
+            .then(function (branch) {
               return repo.checkoutBranch(branch, {});
             })
-            .then(function(reference) {
-              var sign = Git.Signature.now("", "andrea.bertin@outlook.com");
-              repo.push(
-                ["refs/heads/master:refs/heads/master"],
+            .then(function (reference) {
+              return repo.getRemote('origin');
+            })
+            .then(function (aRemote) {
+              remote = aRemote;
+              return remote;
+            })
+            .then(function () {
+              console.log('Connected!!');
+              return remote.push(
+                ['refs/heads/master:refs/heads/master'],
+                {
+                  callbacks: {
+                    credentials: function (url, userName) {
+                      return Git.Cred.userpassPlaintextNew(process.env.GIT_USER, process.env.GIT_PASS);
+                    }
+                  }
+                }
+              );
+              // var sign = Git.Signature.now("", "andrea.bertin@outlook.com");
+              // repo.push(
+              //   ["refs/heads/master:refs/heads/master"],
 
-              )
+              // )
 
+            })
+            .then(function () {
+              console.log('Should have been pushed');
+            })
+            .catch(function (reason) {
+              console.log(reason);
             });
         })
         .done(function () {
